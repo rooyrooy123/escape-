@@ -1,0 +1,839 @@
+#ドラゴンから逃げて、アスレチックを突破する個人戦(どこまで進んだかを競う)
+#
+#正直配布する気もないので説明は適当にします。ただし、重要なことも書いてるので必ず確認してください。
+#るーい(@ROOYROOY10)の没企画
+#skriptが汚すぎておそらく、参考になりません。
+#コマンド「/escape help」、Skript内容(わかりづらくてすいません。)を参考に試してください。
+#改変、二次配布はお好きにどうぞ
+#
+#※今回に関しては、不具合が多いため、最悪、作成したアスレチックや建造物が壊れたりすることが起きる可能性があります。
+#事前に必ずバックアップをとってください。
+#導入は自己責任でお願いします。たとえ、問題が起きても、製作者は一切責任は負いません。
+#
+#導入必須プラグインもあります。(おぼえてないです。すいません。イレギュラーですが。worldeditは確か必要です。入れないとアスレバックアップシステムが作動しない。[つまり、試合で壊されたアスレが復旧しないということです])
+#アスレチックのスタート地点はx座標0の場所にしてください。
+#ドラゴンはx座標 0≦x 方向に進むのでアスレチックもx座標が増える方向に作ってください。
+#これは自分用のSkriptなので親切設計ではないです。
+#覚えている必要事項はこんくらいです。
+#しつこいですが、バックアップ機能は搭載してありますが、不具合で建造物が壊れたりする可能性があるので、必ず事前にバックアップをとってください。
+#自己責任ですよ！！！
+
+on drop:
+    if player is not an op:
+        cancel event
+
+
+
+on rightclick with emerald:
+    if block at {cp%player%} is not air:
+        teleport player to {%player%.cp.%player's world%}
+    if block at {cp%player%} is air:
+        send "&cCPが破壊されました" to player
+
+on death:
+    if victim is a player:
+        cancel event
+        command "/tp %player% ~  0 ~"
+
+on break:
+    if {escape.1.%player%} is set:
+        cancel event
+        set {_location} to location of event-block
+        set {f1x.%player's world%} to {_location}'s x-coord
+        set {f1y.%player's world%} to {_location}'s y-coord
+        set {f1z.%player's world%} to {_location}'s z-coord
+        delete {escape.1.%player%}
+        send "&2>first point set.(%{f1x.%player's world%}% %{f1y.%player's world%}% %{f1z.%player's world%}%)"
+        wait 1 seconds
+        set {escape.2.%player%} to true
+        send "second point をたたいてください。"
+        
+on break:
+    if {escape.2.%player%} is set:
+        cancel event
+        set {_location} to location of event-block
+        set {f2x.%player's world%} to {_location}'s x-coord
+        set {f2y.%player's world%} to {_location}'s y-coord
+        set {f2z.%player's world%} to {_location}'s z-coord
+        delete {escape.2.%player%}
+        send "&2>second point set.(%{f2x.%player's world%}% %{f2y.%player's world%}% %{f2z.%player's world%}%)"
+        
+
+
+on sign change:
+    if player is an op:
+        line 1 is "cp"
+        set line 4 to "&9&l=&c&lParkour&9&l="
+        set line 1 to "&b≫&2CheckPoint&b≪"
+        set line 3 to "&8player"
+        message "&a[CP]&fcpを設置しました"
+        message "&a[CP]&f固定cpにするには1行目にblockと打ちます"
+
+
+on right click on a sign:
+    line 3 of the clicked block is "&8player":
+        if player is on ground:
+            set {%player%.cp.%player's world%} to location of player
+            command ""
+            message "&3&nEscape≫&6set your checkpoint&7(%{%player's world%}%&7)"
+            set {cp%player%} to location of event-block
+        else:
+            message "&e<&a<&bCP&a>&e>&c空中ではCPを設定できません。"
+
+           
+
+every 1 seconds:
+    loop all players:
+        if loop-player's y-coordinate is less than 1:
+            if loop-player's gamemode is adventure:
+                set {_p} to random player out of all players
+                set {location} to location of loop-player
+                set {d} to {location}'s z-coord
+                if {d} is less than 0:
+                    set {d} to 0
+                set {d} to round({d})
+                wait 2 ticks
+                if {d} <= {escape.%loop-player%.pt.%{map}%}:
+                    add "&e%loop-player% &b- &a%{d}%m&7(最高記録⇨%{escape.%loop-player%.pt.%{map}%}%)" to {escapelist::*}
+                if {d} > {escape.%loop-player%.pt.%{map}%}:
+                    add "&7(自己ベスト更新)&e%loop-player% &7%{escape.%loop-player%.pt.%{map}%}%m &b⇨ &e%{d}%m" to {escapelist::*}
+                    wait 2 ticks
+                    set {escape.%loop-player%.pt.%{map}%} to {d}
+                    set {%loop-player's world%::%loop-player%} to {d}
+                command "/addmoney %loop-player% %{d}%"
+                if {bonusgame} is set:
+                    command "/addmoney %loop-player% %{d}%"
+                    send "&6Bonus coin" to loop-player
+                broadcast "&5&l&nEscape≫&8%loop-player% 脱落 &7(%{d}%m)"
+                command "/gamemode 3 %loop-player%"
+                command "/tp %loop-player% ~ 20 ~"
+                remove 1 from {seizonnsya}
+
+
+
+#                set {location} to location of loop-player
+#                set {escape.%player%.pt.%{map}%} to {location}'s z-coord
+#                set {%{map}%.seiha} to true
+#                command "/gamemode 3 %player%"
+#                broadcast "&5&l&nEscape≫&e%player% さんが%{%{map}%}%&eをクリアしました！ &f&l&n%{bplaytimehour}%時間%{bminute}%分%{bsecond}%秒"
+#                remove 1 from {seizonnsya}
+#                add "&e%player% &b- &a%{escape.%player%.pt.%{map}%}%&cm"
+
+
+on walking on sponge:
+    if player's gamemode is adventure:
+        teleport player to {%player%.cp.%player's world%}
+ 
+
+command /escape <text>:
+    usage: /escape help
+    permission:sk.admin
+    trigger:
+        if arg-1 is "help":
+            send "/escape area アスレチック範囲設定"
+            send "/escape startplace コマンド実行時にいるワールドのスタート地点を設定します。"
+            send "/escape lobby 今いる場所をロビーに設定します。"
+            send "/escape mapset マップの完成手順"
+            send "/escape maplist マップ一覧"
+            send "/escape start ゲーム開始"
+        if arg-1 is "area":
+            send "first pointをクリックで破壊してください"
+            set {escape.1.%player%} to true
+        if arg-1 is "startplace":
+            set {escape.%player's world%.startplace} to location of player
+            set {_location} to location of player
+            set {sx.%player's world%} to {_location}'s x-coord
+            set {sy.%player's world%} to {_location}'s y-coord
+            set {sz.%player's world%} to {_location}'s z-coord
+            send "%player's world%のスタート地点を設定しました。"
+        if arg-1 is "lobby":
+            set {escape.lobby} to location of player
+            send "ロビーを設定しました。"
+        if arg-1 is "mapset":
+            send "/escapemapset MAP名 製作者 を実行してください" to player
+        if arg-1 is "maplist":
+            send "%{maplist::*}%"
+        if arg-1 is "start":
+            set {escape.start} to true
+            set {seizonnsya} to 0
+            broadcast "&b≫&a間もなくゲームを開始します。"
+            delete {fillair}
+            delete {fillstart}
+            delete {fillfirst}
+            set {bplaytimehour} to 0
+            set {bminute} to 0
+            delete {bsecond}
+            loop all players:
+                wipe loop-player's sidebar
+            wait 2 seconds
+            broadcast "&7マップを選択中,,,"
+            wait 3 seconds
+            set {map} to random object out of {maplist::*}
+            broadcast "&5Escape≫&6マップは%{map}%&6に決定しました。"
+            wait 2 seconds
+            loop all players:
+                wipe loop-player's sidebar
+                set name of sidebar of loop-player to "&a» &5Escape &a«"
+                set score "&aマップ:%{map}%" in sidebar of loop-player to 15
+                set score "&bROY Parkour" in sidebar of loop-player to 14
+            broadcast "&aマップへテレポートします。"
+            wait 2.5 second
+            set {anymove} to true
+            delete {opts}
+            loop all players:
+                execute console command "/mv tp %loop-player% %{map}%"
+                wait 8 ticks
+                execute console command "/mvconfirm"
+            wait 1 second
+            command "/clear @a"
+            loop all players:
+                command "/tp %loop-player% %{sx.%{map}%}% %{sy.%{map}%}% %{sz.%{map}%}%"
+                command "/gamemode 2 %loop-player%"
+                if {escape.%loop-player%.pt.%{map}%} is not set:
+                    set {escape.%loop-player%.pt.%{map}%} to 0
+                set {f1x.%player's world%} to floor({f1x.%player's world%})
+                set {f1y.%player's world%} to floor({f1y.%player's world%})
+                set {f1z.%player's world%} to floor({f1z.%player's world%})
+                set {f2x.%player's world%} to floor({f2x.%player's world%})
+                set {f2y.%player's world%} to floor({f2y.%player's world%})
+                set {f2z.%player's world%} to floor({f2z.%player's world%})
+                wait 4 ticks
+                if loop-player is an op:
+                    if {opts} is not set:
+                        set {opts} to true
+                        execute loop-player command "//pos1 %{f1x.%loop-player's world%}%,%{f1y.%loop-player's world%}%,%{f1z.%loop-player's world%}%"
+                        wait 1 second
+                        execute loop-player command "//pos2 %{f2x.%loop-player's world%}%,%{f2y.%loop-player's world%}%,%{f2z.%loop-player's world%}%"
+                        wait 1 second
+                        execute loop-player command "//copy"
+                        wait 1 second
+                        execute loop-player command "//schematic save escape%loop-player's world%"
+            wait 1 seconds
+            loop all players:
+                wipe loop-player's sidebar
+            set {fillstart} to "-30"
+            set {fillz} to "5"
+            delete {filltsts}
+            wait 4 ticks
+            set {_lo} to the location at 0, 10, -30 of the world player's world
+            spawn 1 of ender dragon at {_lo} 
+            Add "{Silent:1}" to nbt of last spawned entity
+            set {_dragon} to last spawned entity
+            wait 2 seconds
+            execute player command "/tp @e[type=ender_dragon] 0 %{sy.%{map}%}% -27 180 0"
+            broadcast "&cAre you ready? &6(MAP:%{%{map}%}%&6)"
+            loop all players:
+                set slot 4 of loop-player to nether star named "&aSelect KIT"
+                if {%loop-player%.kit} is not set:
+                    send "&eあなたのKITは「スピードマン」です。" to loop-player
+                if {%loop-player%.kit} is "trap":
+                    send "&eあなたのKITは「トラッパー」です。" to loop-player
+                if {%loop-player%.kit} is "saiminn":
+                    send "&eあなたのKITは「催眠術師」です。" to loop-player
+            broadcast "&rネザースターを右クリックでKITを変更可能"
+            chance of 1%:
+                broadcast "&6&l&n今回のゲームでもらえるコインはなんと2倍になります。"
+                set {bonusgame} to true
+            wait 5 seconds
+            delete {optsts}
+            broadcast "&b≫&a10"
+            loop all players:
+                command "/replaceitem entity %loop-player% slot.armor.head minecraft:skull 1 3 {SkullOwner:{Name:%loop-player%}}"
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:ui.button.click ambient %loop-player%"
+                command "/effect @a minecraft:invisibility 10000 1 true"
+                delete {%loop-player%.cp.%loop-player's world%}
+            wait 1 second
+            loop all players:
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:ui.button.click ambient %loop-player%"
+            broadcast "&b≫&a9"
+            wait 1 second
+            loop all players:
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:ui.button.click ambient %loop-player%"
+            broadcast "&b≫&a8"
+            wait 1 second
+            loop all players:
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:ui.button.click ambient %loop-player%"
+            broadcast "&b≫&a7"
+            wait 1 second
+            loop all players:
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:ui.button.click ambient %loop-player%"
+            broadcast "&b≫&a6"
+            wait 1 second
+            loop all players:
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:ui.button.click ambient %loop-player%"
+            broadcast "&b≫&a5"
+            wait 1 second
+            loop all players:
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:ui.button.click ambient %loop-player%"
+            broadcast "&b≫&a4"
+            wait 1 second
+            loop all players:
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:ui.button.click ambient %loop-player%"
+            broadcast "&b≫&a3"
+            wait 1 second
+            loop all players:
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:ui.button.click ambient %loop-player%"
+            broadcast "&b≫&a2"
+            wait 1 second
+            loop all players:
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:ui.button.click ambient %loop-player%"
+                add 1 to {seizonnsya}
+            broadcast "&b≫&a1"
+            loop all players:
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:ui.button.click ambient %loop-player%"
+            wait 1 seconds
+            delete {anymove}
+            broadcast "&6&l&nStart!!!"
+            delete {fillstartdao}
+            set {fillstart} to "-30"
+            set {fillz} to "1"
+            delete {fillfirst2}
+            set {escape} to true
+            command "/clear @a minecraft:nether_star"
+            loop all players:
+                command "/execute %loop-player% ~ ~ ~ /playsound minecraft:entity.generic.explode ambient %loop-player%"
+                set slot 1 of loop-player to emerald named "&r&cCheckpoint tool"
+                if {%loop-player%.kit} is not set:
+                    set slot 8 of loop-player to feather named "&bSpeed &fitem" with lore "&cright click"
+                    send "&eあなたのKITは「スピードマン」です。" to loop-player
+                if {%loop-player%.kit} is "trap":
+                    set slot 8 of loop-player to web named "&rtrap &fitem" with lore "&cright click"
+                    send "&eあなたのKITは「トラッパー」です。" to loop-player
+                if {%loop-player%.kit} is "saiminn":
+                    set slot 8 of loop-player to ender eye named "&5Hypnosis(催眠) &fitem" with lore "&cright click"
+                    send "&eあなたのKITは「催眠術師」です。" to loop-player
+            set {fillstarttime} to 35
+            wait 4 ticks
+            loop 35 times:
+                execute player command "/tp @e[type=ender_dragon] ~ ~ ~0.5 180 0"
+                execute player command "/gamerule commandBlockOutput false"
+                execute player command "/gamerule sendCommandFeedback false"
+                remove 1 from {fillstarttime}
+                wait 1 second
+                if {fillstarttime} is less than 1:
+                    set {fillstartdao} to true
+                    broadcast "&5浸食が開始されました。"
+                    set {filltsts} to true
+                    loop all players:
+                        if loop-player is an op:
+                            execute loop-player command "/fill %{f1x.%{map}%}% %{f1y.%{map}%}% 1 %{f2x.%{map}%}% %{f2y.%{map}%}% -10 minecraft:air"
+
+on right click with chest:
+    open chest with 3 row named "&a&l[Menu]" to player
+    wait 1 tick
+    set slot 26 of player's current inventory to gold ingot named "&6&lShop" with lore "&aあなたの所持金:%{%player%.money}%"
+    
+   
+
+on inventory click:
+    if name of player's current inventory is "&a&l[Menu]":
+        cancel event
+        clicked inventory isn't player's inventory
+        if clicked slot is 26:
+            command "/menu open %player% shop"
+
+
+command /kitbuy <player> <text> <number>:
+    permission:sk.admin
+    trigger:
+        if {%arg-1%.money} < arg-3:
+            send "&4お金が足りません。"
+            stop
+        if {%arg-1%.money} >= arg-3:
+            if {%arg-2%.buy.%arg-1%} is set:
+                send "&4あなたはそのKITを既に購入しています。"
+            if {%arg-2%.buy.%arg-1%} is not set:
+                set {%arg-2%.buy.%arg-1%} to true
+                set {%arg-1%.kit} to "%arg-2%"
+                remove arg-3 from {%arg-1%.money}
+                send "KITを購入しました。&7(%arg-2%)" to arg-1
+            
+        
+command /addmoney <offline player> <number>:
+    permission:sk.admin
+    trigger:
+        add arg-2 to {%arg-1%.money}
+        send "&e+%arg-2% money" to arg-1
+
+
+on right click with nether star:
+    open chest with 1 row named "&a[Select KIT]" to player
+    wait 1 tick
+    set slot 0 of player's current inventory to feather named "&bスピードマン&7(default)" with lore "5秒間スピードアップ" and "&bCooltime...90 sec"
+    if {trap.buy.%player%} is set:
+        set slot 1 of player's current inventory to web named "&cトラッパー" with lore "右クリック実行時の場所に３秒後罠を仕掛ける。罠にはパーティクルが表示される。" and "&bCooltime...120 sec"
+    if {trap.buy.%player%} is not set:
+        set slot 1 of player's current inventory to barrier named "&cトラッパー(&4未購入)" with lore "右クリック実行時の場所に３秒後罠を仕掛ける。罠にはパーティクルが表示される。" and "&bCooltime...120 sec"
+    if {saiminn.buy.%player%} is set:
+        set slot 2 of player's current inventory to ender eye named "&5催眠術師" with lore "半径１マス以内の人を少しの間眠らせる。浸食が始まるまで使えないので注意,また、空中にいるプレイヤーは眠りません。" and "&bCooltime...150 sec"
+    if {saiminn.buy.%player%} is not set:
+        set slot 2 of player's current inventory to barrier named "&5催眠術師&4(未購入)" with lore "半径１マス以内の人を少しの間眠らせる。浸食が始まるまで使えないので注意,また、空中にいるプレイヤーは眠りません。" and "&bCooltime...150 sec"
+
+
+
+
+on inventory click:
+    if name of player's current inventory is "&a[Select KIT]":
+        cancel event
+        clicked inventory isn't player's inventory
+        if clicked slot is 0:
+            close player's inventory
+            delete {%player%.kit}
+            send "&eKITを「%name of clicked item%&e」に変更しました。"
+        if clicked slot is 1:
+            close player's inventory
+            if {trap.buy.%player%} is not set:
+                send "&4未購入のKITです"
+            if {trap.buy.%player%} is set:
+                set {%player%.kit} to "trap"
+                send "&eKITを「%name of clicked item%&e」に変更しました。"
+        if clicked slot is 2:
+            close player's inventory
+            if {saiminn.buy.%player%} is not set:
+                send "&4未購入のKITです"
+            if {saiminn.buy.%player%} is set:
+                set {%player%.kit} to "saiminn"
+                send "&eKITを「%name of clicked item%&e」に変更しました。"
+
+on right click with feather:
+    if {escape} is set:
+        command "/clear %player% feather"
+        set {cooltime.%player%} to 90
+        command "/effect %player% speed 5 0 true"
+        send "&bスピードを使用しました。(5秒後効果が切れます。)" to player
+        loop 1000 times:
+            if {escape} is set:
+                remove 1 from {cooltime.%player%}
+                set action bar of player to "&bCool time...%{cooltime.%player%}%"
+            if {escape} is not set:
+                stop
+            if {cooltime.%player%} is less than 1:
+                set slot 8 of player to feather named "&bSpeed &fitem" with lore "&cright click"
+                send "&eクールタイム終了" to player
+                exit loop
+            wait 1 second
+            
+            
+on right click with ender eye:
+    cancel event
+    if {escape} is set:
+        if {fillstartdao} is not set:
+            send "&c浸食が開始するまで使用できません。" to player
+        if {fillstartdao} is set:
+            command "/clear %player% ender_eye"
+            set {cooltime.%player%} to 150
+            send "催眠術を実行"
+            loop players in radius 1.5 of player:
+                if "%loop-player%" is not "%player%":
+                    if block under the loop-player is air:
+                        send "&c%loop-player%は空中にいたので催眠にかかりませんでした。" to player
+                    if block under the loop-player is not air:
+                        broadcast "&5%loop-player%が%player%の催眠にかかり、眠ってしまった。"
+                        set {nomove.%loop-player%} to true
+                        command "/effect %loop-player% minecraft:blindness 3 1 false"
+                        wait 3 seconds
+                        delete {nomove.%loop-player%}
+                        add 1 to {saiminn.%player%}
+            loop 1000 times:
+                if {escape} is set:
+                    remove 1 from {cooltime.%player%}
+                    set action bar of player to "&bCool time...%{cooltime.%player%}%"
+                if {escape} is not set:
+                    stop
+                if {cooltime.%player%} is less than 1:
+                    set slot 8 of player to ender eye named "&5Hypnosis(催眠) &fitem" with lore "&cright click"
+                    send "&eクールタイム終了" to player
+                    exit loop
+                wait 1 second
+
+
+
+on right click with web:
+    if {escape} is set:
+        if player's gamemode is adventure:
+            if block under the player is air:
+                send "&c空中では実行できません。"
+            if block under the player is not air:
+                command "/clear %player% web"
+                set {cooltime.%player%} to 120
+                broadcast "&e%player%≫&73秒後罠を設置します。"
+                set {_location} to location of player
+                set {x} to {_location}'s x-coord
+                set {y} to {_location}'s y-coord
+                set {z} to {_location}'s z-coord
+                wait 3 seconds
+                send "&c罠を設置しました。"
+                set {x} to floor({x})
+                set {y} to floor({y})
+                add 1 to {y}
+                set {z} to floor({z})
+                add "%{x}% %{y}% %{z}%" to {webtrap::*}
+                loop 1000 times:
+                    if {escape} is set:
+                        remove 1 from {cooltime.%player%}
+                        set action bar of player to "&bCool time...%{cooltime.%player%}%"
+                        if {escape} is not set:
+                            stop
+                        if {cooltime.%player%} is less than 1:
+                            set slot 8 of player to web named "&rtrap &fitem" with lore "&cright click"
+                            send "&eクールタイム終了"
+                            exit loop
+                        wait 1 second
+
+on any move:
+    set {_location} to location of player
+    set {x.%player%} to {_location}'s x-coord
+    set {y.%player%} to {_location}'s y-coord
+    set {z.%player%} to {_location}'s z-coord
+    set {x.%player%} to floor({x.%player%})
+    set {y.%player%} to floor({y.%player%})
+    set {z.%player%} to floor({z.%player%})
+    add 1 to {y.%player%}
+    loop {webtrap::*}:
+        if "%{x.%player%}% %{y.%player%}% %{z.%player%}%" is "%loop-value%":
+            remove "%{x.%player%}% %{y.%player%}% %{z.%player%}%" from {webtrap::*}
+            command "/effect %player% minecraft:slowness 3 3 false"
+            command "/effect %player% minecraft:blindness 3 3 false"
+            broadcast "&c%player%が罠に引っかかってしまった。"
+            wait 3 seconds
+            delete {nomove.%player%}
+
+every 0.1 seconds:
+    if {webtrap::*} is set:
+        loop all players:
+            loop-player is an op:
+                loop {webtrap::*}:
+                    execute loop-player-1 command "/particle crit %loop-value-2% 0 0 0 0 20 force"
+
+
+on break:
+    if player is not an op:
+        cancel event
+
+
+
+
+
+every 1 second:
+    if {escape} is set:
+        loop all players:
+            wipe loop-player's sidebar
+            set name of sidebar of loop-player to "&e» &5&lEscape &e«"
+            set score "&7%now%" in sidebar of loop-player to 12
+            set score "&7" in sidebar of loop-player to 11
+            set score "&6MAP:%{%{map}%}%" in sidebar of loop-player to 10
+            set score "&a残り生存者:%{seizonnsya}%" in sidebar of loop-player to 9
+            set score "&bKIT(職業):&e「%{%loop-player%.kit}%&e」" in sidebar of loop-player to 8
+            set score "&r%{bplaytimehour}%時間%{bminute}%分%{bsecond}%秒" in sidebar of loop-player to 7
+            set score "&7" in sidebar of loop-player to 6
+            set score "&5浸食状況&7↓↓" in sidebar of loop-player to 5
+            set score "&5%{fillz}%&8m" in sidebar of loop-player to 4
+            set score "&6" in sidebar of loop-player to 3
+            set score "&6最高記録:&a%{escape.%loop-player%.pt.%{map}%}% m" in sidebar of loop-player to 2
+        
+
+on join:
+    if {escape} is not set:
+        teleport player to {escape.lobby}
+        command "/gamemode 2 %player%"
+        command "/clear %player%"
+        wait 2 seconds
+        set slot 0 of player to chest named "&aMenu"
+    if {escape} is set:
+        wait 1 seconds
+        command "/gamemode 3 %player%"
+        command "/mvtp %player% %{map}%"
+        wait 1 seconds
+        command "/mvconfirm"
+        wait 3 seconds
+        command "/gamemode 3 %player%"
+        loop all players:
+            if loop-player's gamemode is adventure:
+                set {ppp} to location of loop-player
+                exit loop
+        teleport player to {ppp}
+        
+
+on quit:
+    if {escape} is set:
+        if player's gamemode is adventure:
+            remove 1 from {seizonnsya}
+
+on damage:
+    if attacker is a player:
+        cancel event
+
+
+            
+on any move:
+    if {anymove} is set:
+        cancel event
+            
+every 1 seconds:
+    if {escape} is set:
+        if {fillstartdao} is set:
+            loop all players:
+                if loop-player is an op:
+                    if {optdasddasts} is not set:
+                        execute loop-player command "/fill %{f1x.%{map}%}% %{f1y.%{map}%}% %{fillstart}% %{f2x.%{map}%}% %{f2y.%{map}%}% %{fillz}% minecraft:air 1 destory"
+                        wait 2 ticks
+                        set {fillz} to {fillz} + 1
+                        set {fillstart} to {fillstart} + 1
+                        if {fillfirst2} is not set:
+                            set {fillstart} to 1
+                            set {fillz} to 1
+                            set {fillfirst2} to true
+                        if {fillz} = {fillstart}:
+                            remove 1 from {fillz}
+                        exit loop
+                        wait 2 ticks
+       
+
+
+every 1 seconds:
+    if {escape} is set:
+        if {filltsts} is set:
+            loop all players:
+                if loop-player is an op:
+                    set {_zd} to {fillz} -6
+                    set {zpd} to {fillz} + 10
+                    execute loop-player command "/tp @e[type=ender_dragon] ~ ~ %{_zd}% 180 0"
+
+every 10 seconds:
+    if {escape} is set:
+        if {filltsts} is set:
+            loop all players:
+                if loop-player is an op:
+                    if "%loop-player%" is "ROOYROOY":
+                        if loop-player's gamemode is spectator:
+                            execute loop-player command "/tp %loop-player% %{sx.%{map}%}% ~ %{zpd}% 180 0"
+                    if "%loop-player%" is "orima123":
+                        if loop-player's gamemode is spectator:
+                            execute loop-player command "/tp %loop-player% %{sx.%{map}%}% ~ %{zpd}% 180 0"
+on command:
+    send "%player%:/%full command%" to console
+        
+command /escapemapset <text> <offline player>:
+    permission:sk.admin
+    trigger:
+        if {f2x.%player's world%} is set:
+            if {f1x.%player's world%} is set:
+                if {sx.%player's world%} is set:
+                    set {%player's world%} to "%arg-1%"
+                    add "%player's world%" to {maplist::*}
+                    
+                    send "MAP削除するときは消したいワールドの中で/escapemapremoveを実行してください"
+
+command /escapemapremove:
+    permission:sk.admin
+    trigger:
+        remove "%player's world%" from {maplist::*}
+        delete {%player's world%}
+
+on join:
+    if scoreboard team "collision" in scoreboard scoreboard of player is not set:
+        register new scoreboard team "collision" in scoreboard scoreboard of player
+    set {_team} to scoreboard team "collision" in scoreboard scoreboard of player
+    set scoreboard team option COLLISION_RULE of team {_team} to NEVER
+    command "/scoreboard teams option %{_team}% true"
+    loop all players:
+        loop-player is not player
+        scoreboard add entry "%loop-player%" to team {_team}
+        scoreboard team "collision" in scoreboard scoreboard of loop-player is set
+        scoreboard add entry "%player%" to team scoreboard team "collision" in scoreboard scoreboard of loop-player
+
+
+
+
+every 5 seconds:
+    loop all players:
+        if {escape} is set:
+            if {%{map}%.seiha.%loop-player%} is not set:
+                set loop-player's display name to "&b[&c%{escape.%loop-player%.pt.%{map}%}%&7pt&b] &r%loop-player%"
+                set the loop-player's tablist name to "&b[&c%{escape.%loop-player%.pt.%{map}%}%&7pt&b] &r%loop-player%"
+                stop
+            if {%{map}%.seiha.%loop-player%} is set:
+                set loop-player's display name to "&b[&6&l%{escape.%loop-player%.pt.%{map}%}%&7pt&b] &r%loop-player%"
+                set the loop-player's tablist name to "&b[&6&l%{escape.%loop-player%.pt.%{map}%}%&7pt&b] &r%loop-player%"
+                stop
+
+
+
+every 1 seconds:
+    loop all players:
+        if {escape} is not set:
+            set loop-player's display name to "&r%loop-player%"
+            set the loop-player's tablist name to "%loop-player%"
+
+
+on walking on diamond block:
+    if player's gamemode is adventure:
+        block under the event-block is beacon:
+            if {escape} is set:
+                set {dts} to {escape.%player%.pt.%{map}%}
+                wait 2 ticks
+                set {_location} to location of event-block
+                set {escape.%player%.pt.%{map}%} to {_location}'s z-coord
+                set {escape.%player%.pt.%{map}%} to round({escape.%player%.pt.%{map}%})
+                wait 2 ticks
+                add "&7(自己ベスト更新)&e%player% &7%{dts}%m &b⇨ &e%{escape.%player%.pt.%{map}%}%m" to {escapelist::*}
+                set {%player's world%::%player%} to {escape.%player%.pt.%{map}%}
+                set {%{map}%.seiha.%player%} to true
+                command "/gamemode 3 %player%"
+                broadcast "&5&l&nEscape≫&e%player% さんが%{%{map}%}%&eをクリアしました！ &f&l&n%{bplaytimehour}%時間%{bminute}%分%{bsecond}%秒"
+                broadcast "&a%{escape.%player%.pt.%{map}%}%&am"
+                remove 1 from {seizonnsya}
+                command "/addmoney %player% %{escape.%player%.pt.%{map}%}%"
+                command "/addmoney %player% 1000"
+                if {bonusgame} is set:
+                    send "&6Bonus coin↓↓"
+                    command "/addmoney %player% %{escape.%player%.pt.%{map}%}%"
+                    command "/addmoney %player% 1000"
+                add 1 to {clearnum.%player%}
+                
+                
+                
+every 1 second:
+    if {escape} is set:
+        if {dasddaa} is not set:
+            if {dadsd} is not set:
+                add 1 to {bsecond}
+                if {bsecond} is greater than 59:
+                    set {bsecond} to 0
+                    add 1 to {bminute}
+                    if {bminute} is greater than 59:
+                        add 1 to {bplaytimehour}
+                        set {bminute} to 0
+
+
+command /gamereset:
+    permission:sk.admin
+    trigger:
+        set {seizonnsya} to 0
+        set {escape} to true
+
+every 3 seconds:
+    if {seizonnsya} is less than 1:
+        if {escape} is set:
+            delete {escape}
+            loop all players:
+                send loop-player title "&cゲーム終了！！！" with subtitle "%{map}%" for 3.5 seconds
+            broadcast "&cゲーム終了！！！&e(MAP:%{map}%)"
+            set {_high} to 0
+            wait 3 seconds
+            broadcast "&a今回の記録↓↓"
+            loop {escapelist::*}:
+                broadcast "%loop-value%"
+            delete {escape}
+            wait 5 seconds
+            broadcast "&eゲームをリセットします。"
+            command "/effect @a clear"
+            command "/clear @a"
+            delete {escapelist::*}
+            delete {bonusgame}
+            set {seizonnsya} to 0
+            wait 1 seconds
+            command "/resetmap"
+            loop all players:
+                loop-player is an op:
+                    execute loop-player command "/kill @e[type=ender_dragon]"
+            wait 1 second
+            broadcast "&7マップ復元中,,,"
+
+
+#execute player command "/clone %{f1x.%{map}%}% %{f1y.%{map}%}% %{f1z.%{map}%}% %{f2x.%{map}%}% %{f2y.%{map}%}% %{f2z.%{map}%}% %{c1x}% %{f1y.%{map}%}% %{f1z.%{map}%}%"
+command /resetmap:
+    permission:sk.admin
+    trigger:
+        loop all players:
+            command "/clear %loop-player%"
+            teleport loop-player to {escape.lobby}
+            command "/gamemode 2 %loop-player%"
+            wipe loop-player's sidebar
+        delete {opts}
+        wait 2 seconds
+        command "/clear @a"
+        loop all players:
+            command "/gamemode 2 %loop-player%"
+            if loop-player is an op:
+                if {opts} is not set:
+                    set {opts} to true
+                    set {nomove.%loop-player%} to true
+                    command "/mv tp %loop-player% %{map}%"
+                    wait 1 seconds
+                    execute loop-player command "/mvconfirm"
+                    wait 2 seconds
+                    command "/gamemode 3 %loop-player%"
+                    command "/tp %loop-player% %{sx.%{map}%}% %{sy.%{map}%}% %{sz.%{map}%}%"
+                    execute loop-player command "/schematic load escape%loop-player's world%"
+                    wait 1 seconds
+                    execute loop-player command "//paste"
+                    wait 4 seconds
+                    execute loop-player command "//schematic delete escape%loop-player's world%.schematic"
+                    wait 2 seconds
+                    teleport loop-player to {escape.lobby}
+                    delete {nomove.%loop-player%}
+                    wait 5 second
+                    command "/gamemode 2 %loop-player%"
+                    exit loop
+        delete {escape}
+        delete {opts}
+        delete {webtrap::*}
+        loop all players:
+            set slot 0 of loop-player to chest named "&aMenu"
+        broadcast "&bリセット処理完了。"
+        
+on any move:
+    if {nomove.%player%} is set:
+        cancel event
+        
+        
+command /tsts:
+    permission:sk.admin
+    trigger:
+        delete {maplist::*}
+
+
+command /tsarg <text>:
+    permission:sk.admin
+    trigger:
+        remove "%arg-1%" from {maplist::*}
+
+
+
+
+
+options:
+    count: 10
+
+command /rankingbroadcast:
+    permission:sk.admin
+    trigger:
+        set {_high} to 0
+        loop {%player's world%list::*}:
+            set {_%player's world%list::%loop-index%} to loop-value
+        loop {@count} times:
+            loop {_%player's world%list::*}:
+                loop-value-2 > {_high}
+                set {_high} to loop-value-2
+                set {_highplayer} to loop-index
+            broadcast "&e＃No.&7%loop-number% %{_highplayer}% ≫&2%{_high}%m"
+            set {_high} to 0
+            delete {_list::%{_highplayer}%}
+
+
+command /ranking:
+    trigger:
+        set {_high} to 0
+        loop {%player's world%list::*}:
+            set {_%player's world%list::%loop-index%} to loop-value
+        loop {@count} times:
+            loop {_%player's world%list::*}:
+                loop-value-2 > {_high}
+                set {_high} to loop-value-2
+                set {_highplayer} to loop-index
+            send "&e＃No.&7%loop-number% %{_highplayer}% ≫&2%{_high}%m"
+            set {_high} to 0
+            delete {_list::%{_highplayer}%}
+
+
